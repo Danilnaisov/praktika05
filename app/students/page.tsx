@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,81 +46,60 @@ export default function StudentsList() {
     roomId: "",
   });
   const router = useRouter();
-  const user = getAuthUser();
+  const [user, setUser] = useState(null);
+
+  const fetchStudents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const query = new URLSearchParams({
+        ...filters,
+        hasOrphanStatus: filters.hasOrphanStatus,
+        hasDisabilityStatus: filters.hasDisabilityStatus,
+        hasOVZStatus: filters.hasOVZStatus,
+        hasRiskGroupSOP: filters.hasRiskGroupSOP,
+        hasSVOStatus: filters.hasSVOStatus,
+        hasSocialScholarship: filters.hasSocialScholarship,
+        hasPenalties: filters.hasPenalties,
+        hasSPPP: filters.hasSPPP,
+      }).toString();
+      const res = await fetch(`/api/students/filter?${query}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setStudents(data);
+      } else if (data.students && Array.isArray(data.students)) {
+        setStudents(data.students);
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (err) {
+      setError(err.message || "Failed to fetch students");
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    const fetchStudents = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const query = new URLSearchParams({
-          ...filters,
-          hasOrphanStatus: filters.hasOrphanStatus,
-          hasDisabilityStatus: filters.hasDisabilityStatus,
-          hasOVZStatus: filters.hasOVZStatus,
-          hasRiskGroupSOP: filters.hasRiskGroupSOP,
-          hasSVOStatus: filters.hasSVOStatus,
-          hasSocialScholarship: filters.hasSocialScholarship,
-          hasPenalties: filters.hasPenalties,
-          hasSPPP: filters.hasSPPP,
-        }).toString();
-        const res = await fetch(`/api/students/filter?${query}`);
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setStudents(data);
-        } else if (data.students && Array.isArray(data.students)) {
-          setStudents(data.students);
-        } else {
-          throw new Error("Invalid response format");
-        }
-      } catch (err) {
-        setError(err.message || "Failed to fetch students");
-        setStudents([]);
-      } finally {
-        setLoading(false);
+    const checkAuth = async () => {
+      const authUser = await getAuthUser();
+      if (!authUser) {
+        router.push("/login");
+      } else {
+        setUser(authUser);
       }
     };
+    checkAuth();
+  }, [router]);
 
-    fetchStudents();
-  }, [router, user]);
+  useEffect(() => {
+    if (user) {
+      fetchStudents();
+    }
+  }, [user, fetchStudents]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const applyFilters = () => {
-    const query = new URLSearchParams({
-      ...filters,
-      hasOrphanStatus: filters.hasOrphanStatus,
-      hasDisabilityStatus: filters.hasDisabilityStatus,
-      hasOVZStatus: filters.hasOVZStatus,
-      hasRiskGroupSOP: filters.hasRiskGroupSOP,
-      hasSVOStatus: filters.hasSVOStatus,
-      hasSocialScholarship: filters.hasSocialScholarship,
-      hasPenalties: filters.hasPenalties,
-      hasSPPP: filters.hasSPPP,
-    }).toString();
-    fetch(`/api/students/filter?${query}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setStudents(data);
-        } else if (data.students && Array.isArray(data.students)) {
-          setStudents(data.students);
-        } else {
-          throw new Error("Invalid response format");
-        }
-        setError(null);
-      })
-      .catch((err) => {
-        setError(err.message || "Failed to fetch students");
-        setStudents([]);
-      });
   };
 
   if (!user) return null;
@@ -130,8 +109,11 @@ export default function StudentsList() {
       <h1 className="text-2xl font-bold text-[#0060AC] mb-6">
         База данных по воспитательной работе
       </h1>
-
-      {/* Фильтры */}
+      <Link href="/students/add">
+        <Button className="mb-6 bg-[#E41613] hover:bg-[#C41411] text-white">
+          Добавить студента
+        </Button>
+      </Link>
       <Card className="mb-6 bg-white/80 border-[#0060AC]/30">
         <CardHeader>
           <CardTitle className="text-[#0060AC]">Фильтры</CardTitle>
@@ -378,15 +360,13 @@ export default function StudentsList() {
             </div>
           </div>
           <Button
-            onClick={applyFilters}
+            onClick={fetchStudents}
             className="mt-4 w-full bg-[#E41613] hover:bg-[#C41411] text-white"
           >
             Применить фильтры
           </Button>
         </CardContent>
       </Card>
-
-      {/* Таблица и карточки */}
       {loading && <p className="text-[#0060AC]">Загрузка...</p>}
       {error && <p className="text-[#E41613]">{error}</p>}
       {!loading && !error && students.length === 0 && (
@@ -394,7 +374,6 @@ export default function StudentsList() {
       )}
       {!loading && students.length > 0 && (
         <>
-          {/* Таблица для десктопа */}
           <div className="hidden md:block overflow-x-auto">
             <Table className="bg-white/80 border-[#0060AC]/30 rounded-lg">
               <TableHeader>
@@ -483,8 +462,6 @@ export default function StudentsList() {
               </TableBody>
             </Table>
           </div>
-
-          {/* Карточки для мобильных */}
           <div className="md:hidden space-y-4">
             {students.map((student) => (
               <Card

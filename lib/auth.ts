@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
 import { User } from "@/types/user";
 
 export function generateToken(user: User): string {
@@ -16,11 +15,11 @@ export function verifyToken(token: string): User {
   return jwt.verify(token, process.env.JWT_SECRET!) as User;
 }
 
-export function getAuthUser(): User | null {
-  const token = cookies().get("token")?.value;
-  if (!token) return null;
+export async function getAuthUser(): Promise<User | null> {
   try {
-    return verifyToken(token);
+    const res = await fetch("/api/auth/check", { credentials: "include" });
+    const data = await res.json();
+    return data.user || null;
   } catch {
     return null;
   }
@@ -28,7 +27,7 @@ export function getAuthUser(): User | null {
 
 export function requireAuth(roles: string[] = []) {
   return async (request: Request) => {
-    const token = cookies().get("token")?.value;
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "");
     if (!token) {
       return new Response(JSON.stringify({ error: "Не авторизован" }), {
         status: 401,

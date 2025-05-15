@@ -48,7 +48,8 @@ export async function PUT(
       !data.group ||
       !data.phone ||
       !data.funding ||
-      !data.departmentId?._id
+      !data.departmentId?._id ||
+      !data.education
     ) {
       return NextResponse.json(
         { error: "Все обязательные поля должны быть заполнены" },
@@ -70,6 +71,18 @@ export async function PUT(
     if (data.admissionYear && !/^\d{4}$/.test(data.admissionYear.toString())) {
       return NextResponse.json(
         { error: "Год поступления должен быть 4-значным числом" },
+        { status: 400 }
+      );
+    }
+    if (!["Бюджет", "Контракт", "Платное"].includes(data.funding)) {
+      return NextResponse.json(
+        { error: "Неверное значение финансирования" },
+        { status: 400 }
+      );
+    }
+    if (!["9 кл.", "11 кл.", "СПО", "ВО"].includes(data.education)) {
+      return NextResponse.json(
+        { error: "Неверное значение образования" },
         { status: 400 }
       );
     }

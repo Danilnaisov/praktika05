@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,34 +30,71 @@ export default function AddStudent() {
     admissionYear: undefined,
     expulsionInfo: "",
   });
+  const [formData2, setFormData2] = useState({ subGroup: "1" });
   const [errors, setErrors] = useState<Partial<Record<keyof Student, string>>>(
     {}
   );
   const [departments, setDepartments] = useState<
-    { _id: string; name: string }[]
+    { _id: string; name: string; code: string }[]
   >([]);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const router = useRouter();
-  const user = getAuthUser();
+  const [user, setUser] = useState(null);
+
+  const fetchDepartments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/departments");
+      const data = await res.json();
+      setDepartments(
+        data.map((d: any) => ({
+          _id: d._id,
+          name: d.name,
+          code: d.code || d.name.slice(0, 3).toUpperCase(),
+        }))
+      );
+    } catch {
+      setSubmitError("Не удалось загрузить отделения");
+    }
+  }, []);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    const fetchDepartments = async () => {
-      try {
-        const res = await fetch("/api/departments");
-        const data = await res.json();
-        setDepartments(data);
-      } catch {
-        setSubmitError("Не удалось загрузить отделения");
+    const checkAuth = async () => {
+      const authUser = await getAuthUser();
+      if (!authUser) {
+        router.push("/login");
+      } else {
+        setUser(authUser);
       }
     };
+    checkAuth();
     fetchDepartments();
-  }, [router, user]);
+  }, [router, fetchDepartments]);
+
+  const generateGroup = useCallback(() => {
+    if (formData.departmentId && formData.admissionYear) {
+      const dept = departments.find((d) => d._id === formData.departmentId);
+      const year = formData.admissionYear?.toString().slice(-2);
+      if (dept && year) {
+        return `${dept.code}-${year}-${formData2.subGroup || "1"}`;
+      }
+    }
+    return formData.group || "";
+  }, [
+    formData.departmentId,
+    formData.admissionYear,
+    formData2.subGroup,
+    departments,
+  ]);
+
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, group: generateGroup() }));
+  }, [
+    formData.departmentId,
+    formData.admissionYear,
+    formData2.subGroup,
+    generateGroup,
+  ]);
 
   const validateForm = () => {
     const newErrors: Partial<Record<keyof Student, string>> = {};
@@ -78,6 +115,7 @@ export default function AddStudent() {
       !/^\d{4}$/.test(formData.admissionYear.toString())
     )
       newErrors.admissionYear = "Год поступления: 4 цифры";
+    if (!formData.education) newErrors.education = "Образование обязательно";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -123,6 +161,7 @@ export default function AddStudent() {
           admissionYear: undefined,
           expulsionInfo: "",
         });
+        setFormData2({ subGroup: "1" });
       } else {
         setSubmitError(result.error || "Ошибка при добавлении");
       }
@@ -137,6 +176,11 @@ export default function AddStudent() {
     setFormData((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
+
+  const years = Array.from(
+    { length: 2025 - 2000 + 1 },
+    (_, i) => 2000 + i
+  ).reverse();
 
   if (!user) return null;
 
@@ -234,91 +278,6 @@ export default function AddStudent() {
               )}
             </div>
             <div>
-              <Label htmlFor="group" className="text-[#0060AC]">
-                Группа *
-              </Label>
-              <Input
-                id="group"
-                placeholder="Введите группу (например, ПИ-14-1)"
-                value={formData.group}
-                onChange={(e) => handleInputChange("group", e.target.value)}
-                className={`border-[#0060AC] focus:ring-[#0060AC] ${
-                  errors.group ? "border-[#E41613]" : ""
-                }`}
-                aria-invalid={!!errors.group}
-                aria-describedby={errors.group ? "group-error" : undefined}
-              />
-              {errors.group && (
-                <p id="group-error" className="text-[#E41613] text-sm">
-                  {errors.group}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="phone" className="text-[#0060AC]">
-                Телефон *
-              </Label>
-              <Input
-                id="phone"
-                placeholder="+7 (XXX)-XXX-XX-XX"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                className={`border-[#0060AC] focus:ring-[# ULC ] ${
-                  errors.phone ? "border-[#E41613]" : ""
-                }`}
-                aria-invalid={!!errors.phone}
-                aria-describedby={errors.phone ? "phone-error" : undefined}
-              />
-              {errors.phone && (
-                <p id="phone-error" className="text-[#E41613] text-sm">
-                  {errors.phone}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="funding" className="text-[#0060AC]">
-                Финансирование *
-              </Label>
-              <Select
-                value={formData.funding}
-                onValueChange={(value) => handleInputChange("funding", value)}
-              >
-                <SelectTrigger
-                  id="funding"
-                  className={`border-[#0060AC] ${
-                    errors.funding ? "border-[#E41613]" : ""
-                  }`}
-                  aria-invalid={!!errors.funding}
-                  aria-describedby={
-                    errors.funding ? "funding-error" : undefined
-                  }
-                >
-                  <SelectValue placeholder="Выберите финансирование" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Бюджет">Бюджет</SelectItem>
-                  <SelectItem value="Контракт">Контракт</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.funding && (
-                <p id="funding-error" className="text-[#E41613] text-sm">
-                  {errors.funding}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="education" className="text-[#0060AC]">
-                Образование
-              </Label>
-              <Input
-                id="education"
-                placeholder="Введите образование (например, 9 кл.)"
-                value={formData.education}
-                onChange={(e) => handleInputChange("education", e.target.value)}
-                className="border-[#0060AC] focus:ring-[#0060AC]"
-              />
-            </div>
-            <div>
               <Label htmlFor="departmentId" className="text-[#0060AC]">
                 Отделение *
               </Label>
@@ -356,27 +315,163 @@ export default function AddStudent() {
             </div>
             <div>
               <Label htmlFor="admissionYear" className="text-[#0060AC]">
-                Год поступления
+                Год поступления *
               </Label>
-              <Input
-                id="admissionYear"
-                type="number"
-                placeholder="Введите год поступления"
-                value={formData.admissionYear || ""}
-                onChange={(e) =>
-                  handleInputChange("admissionYear", Number(e.target.value))
+              <Select
+                value={formData.admissionYear?.toString()}
+                onValueChange={(value) =>
+                  handleInputChange("admissionYear", Number(value))
                 }
-                className={`border-[#0060AC] focus:ring-[#0060AC] ${
-                  errors.admissionYear ? "border-[#E41613]" : ""
-                }`}
-                aria-invalid={!!errors.admissionYear}
-                aria-describedby={
-                  errors.admissionYear ? "admissionYear-error" : undefined
-                }
-              />
+              >
+                <SelectTrigger
+                  id="admissionYear"
+                  className={`border-[#0060AC] ${
+                    errors.admissionYear ? "border-[#E41613]" : ""
+                  }`}
+                  aria-invalid={!!errors.admissionYear}
+                  aria-describedby={
+                    errors.admissionYear ? "admissionYear-error" : undefined
+                  }
+                >
+                  <SelectValue placeholder="Выберите год" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.admissionYear && (
                 <p id="admissionYear-error" className="text-[#E41613] text-sm">
                   {errors.admissionYear}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="subGroup" className="text-[#0060AC]">
+                Подгруппа *
+              </Label>
+              <Select
+                value={formData2.subGroup}
+                onValueChange={(value) => setFormData2({ subGroup: value })}
+              >
+                <SelectTrigger id="subGroup" className="border-[#0060AC]">
+                  <SelectValue placeholder="Выберите подгруппу" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["1", "2", "3", "4"].map((sub) => (
+                    <SelectItem key={sub} value={sub}>
+                      {sub}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="group" className="text-[#0060AC]">
+                Группа *
+              </Label>
+              <Input
+                id="group"
+                value={formData.group}
+                readOnly
+                className={`border-[#0060AC] focus:ring-[#0060AC] ${
+                  errors.group ? "border-[#E41613]" : ""
+                }`}
+                aria-invalid={!!errors.group}
+                aria-describedby={errors.group ? "group-error" : undefined}
+              />
+              {errors.group && (
+                <p id="group-error" className="text-[#E41613] text-sm">
+                  {errors.group}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="phone" className="text-[#0060AC]">
+                Телефон *
+              </Label>
+              <Input
+                id="phone"
+                placeholder="+7 (XXX)-XXX-XX-XX"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                className={`border-[#0060AC] focus:ring-[#0060AC] ${
+                  errors.phone ? "border-[#E41613]" : ""
+                }`}
+                aria-invalid={!!errors.phone}
+                aria-describedby={errors.phone ? "phone-error" : undefined}
+              />
+              {errors.phone && (
+                <p id="phone-error" className="text-[#E41613] text-sm">
+                  {errors.phone}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="funding" className="text-[#0060AC]">
+                Финансирование *
+              </Label>
+              <Select
+                value={formData.funding}
+                onValueChange={(value) => handleInputChange("funding", value)}
+              >
+                <SelectTrigger
+                  id="funding"
+                  className={`border-[#0060AC] ${
+                    errors.funding ? "border-[#E41613]" : ""
+                  }`}
+                  aria-invalid={!!errors.funding}
+                  aria-describedby={
+                    errors.funding ? "funding-error" : undefined
+                  }
+                >
+                  <SelectValue placeholder="Выберите финансирование" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Бюджет">Бюджет</SelectItem>
+                  <SelectItem value="Контракт">Контракт</SelectItem>
+                  <SelectItem value="Платное">Платное</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.funding && (
+                <p id="funding-error" className="text-[#E41613] text-sm">
+                  {errors.funding}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="education" className="text-[#0060AC]">
+                Образование *
+              </Label>
+              <Select
+                value={formData.education}
+                onValueChange={(value) => handleInputChange("education", value)}
+              >
+                <SelectTrigger
+                  id="education"
+                  className={`border-[#0060AC] ${
+                    errors.education ? "border-[#E41613]" : ""
+                  }`}
+                  aria-invalid={!!errors.education}
+                  aria-describedby={
+                    errors.education ? "education-error" : undefined
+                  }
+                >
+                  <SelectValue placeholder="Выберите образование" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="9 кл.">9 кл.</SelectItem>
+                  <SelectItem value="11 кл.">11 кл.</SelectItem>
+                  <SelectItem value="СПО">СПО</SelectItem>
+                  <SelectItem value="ВО">ВО</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.education && (
+                <p id="education-error" className="text-[#E41613] text-sm">
+                  {errors.education}
                 </p>
               )}
             </div>
