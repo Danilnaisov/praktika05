@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Student } from "@/types/student";
+import { getAuthUser } from "@/lib/auth";
 
 export default function AddStudent() {
   const [formData, setFormData] = useState<Partial<Student>>({
@@ -36,20 +38,26 @@ export default function AddStudent() {
   >([]);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const router = useRouter();
+  const user = getAuthUser();
 
-  // Загрузка отделений
   useEffect(() => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
     const fetchDepartments = async () => {
       try {
         const res = await fetch("/api/departments");
         const data = await res.json();
         setDepartments(data);
-      } catch (err) {
+      } catch {
         setSubmitError("Не удалось загрузить отделения");
       }
     };
     fetchDepartments();
-  }, []);
+  }, [router, user]);
 
   const validateForm = () => {
     const newErrors: Partial<Record<keyof Student, string>> = {};
@@ -118,7 +126,7 @@ export default function AddStudent() {
       } else {
         setSubmitError(result.error || "Ошибка при добавлении");
       }
-    } catch (err) {
+    } catch {
       setSubmitError("Не удалось добавить студента");
     } finally {
       setLoading(false);
@@ -129,6 +137,8 @@ export default function AddStudent() {
     setFormData((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
+
+  if (!user) return null;
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-[#9EA1A2]/20 rounded-xl shadow-lg">
@@ -253,7 +263,7 @@ export default function AddStudent() {
                 placeholder="+7 (XXX)-XXX-XX-XX"
                 value={formData.phone}
                 onChange={(e) => handleInputChange("phone", e.target.value)}
-                className={`border-[#0060AC] focus:ring-[#0060AC] ${
+                className={`border-[#0060AC] focus:ring-[# ULC ] ${
                   errors.phone ? "border-[#E41613]" : ""
                 }`}
                 aria-invalid={!!errors.phone}

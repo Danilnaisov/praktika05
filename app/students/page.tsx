@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,8 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Student } from "@/types/student";
+import { getAuthUser } from "@/lib/auth";
+import Link from "next/link";
 
 export default function StudentsList() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -42,50 +45,85 @@ export default function StudentsList() {
     hasSPPP: "false",
     roomId: "",
   });
-
-  const fetchStudents = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const query = new URLSearchParams({
-        ...filters,
-        hasOrphanStatus: filters.hasOrphanStatus,
-        hasDisabilityStatus: filters.hasDisabilityStatus,
-        hasOVZStatus: filters.hasOVZStatus,
-        hasRiskGroupSOP: filters.hasRiskGroupSOP,
-        hasSVOStatus: filters.hasSVOStatus,
-        hasSocialScholarship: filters.hasSocialScholarship,
-        hasPenalties: filters.hasPenalties,
-        hasSPPP: filters.hasSPPP,
-      }).toString();
-      const res = await fetch(`/api/students/filter?${query}`);
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setStudents(data);
-      } else if (data.students && Array.isArray(data.students)) {
-        setStudents(data.students);
-      } else {
-        throw new Error("Invalid response format");
-      }
-    } catch (err) {
-      setError(err.message || "Failed to fetch students");
-      setStudents([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const router = useRouter();
+  const user = getAuthUser();
 
   useEffect(() => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    const fetchStudents = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const query = new URLSearchParams({
+          ...filters,
+          hasOrphanStatus: filters.hasOrphanStatus,
+          hasDisabilityStatus: filters.hasDisabilityStatus,
+          hasOVZStatus: filters.hasOVZStatus,
+          hasRiskGroupSOP: filters.hasRiskGroupSOP,
+          hasSVOStatus: filters.hasSVOStatus,
+          hasSocialScholarship: filters.hasSocialScholarship,
+          hasPenalties: filters.hasPenalties,
+          hasSPPP: filters.hasSPPP,
+        }).toString();
+        const res = await fetch(`/api/students/filter?${query}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setStudents(data);
+        } else if (data.students && Array.isArray(data.students)) {
+          setStudents(data.students);
+        } else {
+          throw new Error("Invalid response format");
+        }
+      } catch (err) {
+        setError(err.message || "Failed to fetch students");
+        setStudents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchStudents();
-  }, []);
+  }, [router, user]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const applyFilters = () => {
-    fetchStudents();
+    const query = new URLSearchParams({
+      ...filters,
+      hasOrphanStatus: filters.hasOrphanStatus,
+      hasDisabilityStatus: filters.hasDisabilityStatus,
+      hasOVZStatus: filters.hasOVZStatus,
+      hasRiskGroupSOP: filters.hasRiskGroupSOP,
+      hasSVOStatus: filters.hasSVOStatus,
+      hasSocialScholarship: filters.hasSocialScholarship,
+      hasPenalties: filters.hasPenalties,
+      hasSPPP: filters.hasSPPP,
+    }).toString();
+    fetch(`/api/students/filter?${query}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setStudents(data);
+        } else if (data.students && Array.isArray(data.students)) {
+          setStudents(data.students);
+        } else {
+          throw new Error("Invalid response format");
+        }
+        setError(null);
+      })
+      .catch((err) => {
+        setError(err.message || "Failed to fetch students");
+        setStudents([]);
+      });
   };
+
+  if (!user) return null;
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-[#9EA1A2]/20 rounded-xl shadow-lg">
@@ -396,7 +434,14 @@ export default function StudentsList() {
                     key={student._id}
                     className="hover:bg-[#9EA1A2]/10 h-20"
                   >
-                    <TableCell className="whitespace-normal">{`${student.lastName} ${student.firstName} ${student.middleName}`}</TableCell>
+                    <TableCell className="whitespace-normal">
+                      <Link
+                        href={`/students/${student._id}`}
+                        className="text-[#0060AC] hover:underline"
+                      >
+                        {`${student.lastName} ${student.firstName} ${student.middleName}`}
+                      </Link>
+                    </TableCell>
                     <TableCell className="whitespace-normal">
                       {new Date(student.birthDate).toLocaleDateString("ru-RU")}
                     </TableCell>
@@ -449,7 +494,14 @@ export default function StudentsList() {
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="font-semibold text-[#0060AC]">ФИО:</div>
-                    <div>{`${student.lastName} ${student.firstName} ${student.middleName}`}</div>
+                    <div>
+                      <Link
+                        href={`/students/${student._id}`}
+                        className="text-[#0060AC] hover:underline"
+                      >
+                        {`${student.lastName} ${student.firstName} ${student.middleName}`}
+                      </Link>
+                    </div>
                     <div className="font-semibold text-[#0060AC]">
                       Дата рождения:
                     </div>
