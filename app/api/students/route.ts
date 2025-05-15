@@ -40,7 +40,8 @@ export async function POST(request: Request) {
       !data.phone ||
       !data.funding ||
       !data.departmentId?._id ||
-      !data.education
+      !data.education ||
+      !data.admissionYear
     ) {
       return NextResponse.json(
         { error: "Все обязательные поля должны быть заполнены" },
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    if (data.admissionYear && !/^\d{4}$/.test(data.admissionYear.toString())) {
+    if (!/^\d{4}$/.test(data.admissionYear.toString())) {
       return NextResponse.json(
         { error: "Год поступления должен быть 4-значным числом" },
         { status: 400 }
@@ -90,6 +91,8 @@ export async function POST(request: Request) {
     const student = await Student.create({
       ...data,
       departmentId: data.departmentId._id,
+      graduationYear: data.graduationYear || undefined,
+      gender: data.gender || undefined,
     });
     await mongoose.disconnect();
     return NextResponse.json(student, { status: 201 });

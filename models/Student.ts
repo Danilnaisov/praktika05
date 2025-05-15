@@ -1,38 +1,87 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
 
-const StudentSchema = new Schema({
-  lastName: { type: String, required: true, match: /^[А-Яа-яA-Za-z]+$/ },
-  firstName: { type: String, required: true, match: /^[А-Яа-яA-Za-z]+$/ },
-  middleName: { type: String, match: /^[А-Яа-яA-Za-z]+$/ },
-  birthDate: { type: Date, required: true },
-  gender: { type: String, enum: ["М", "Ж"], required: true },
+const studentSchema = new mongoose.Schema({
+  lastName: {
+    type: String,
+    required: [true, "Фамилия обязательна"],
+  },
+  firstName: {
+    type: String,
+    required: [true, "Имя обязательно"],
+  },
+  middleName: {
+    type: String,
+  },
+  birthDate: {
+    type: Date,
+    required: [true, "Дата рождения обязательна"],
+  },
+  group: {
+    type: String,
+    required: [true, "Группа обязательна"],
+  },
   phone: {
     type: String,
-    required: true,
-    match: /^\+7 \(\d{3}\)-\d{3}-\d{2}-\d{2}$/,
+    required: [true, "Телефон обязателен"],
+    match: [/^\+7 \(\d{3}\)-\d{3}-\d{2}-\d{2}$/, "Неверный формат телефона"],
   },
-  education: { type: String, enum: ["9 кл.", "11 кл."], required: true },
+  funding: {
+    type: String,
+    required: [true, "Финансирование обязательно"],
+    enum: ["Бюджет", "Контракт", "Платное"],
+  },
+  education: {
+    type: String,
+    required: [true, "Образование обязательно"],
+    enum: ["9 кл.", "11 кл.", "СПО", "ВО"],
+  },
   departmentId: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Department",
-    required: true,
+    required: [true, "Отделение обязательно"],
   },
-  group: { type: String, required: true },
-  funding: { type: String, enum: ["Бюджет", "Внебюджет"], required: true },
-  admissionYear: { type: Number, required: true },
-  graduationYear: { type: Number, required: true },
-  expulsionInfo: { type: String },
-  expulsionDate: { type: Date },
-  note: { type: String },
-  parentInfo: { type: String },
-  penalties: { type: String },
-  files: [{ type: Schema.Types.ObjectId, ref: "File" }],
+  admissionYear: {
+    type: Number,
+    required: [true, "Год поступления обязателен"],
+    match: [/^\d{4}$/, "Год поступления должен быть 4-значным числом"],
+  },
+  graduationYear: {
+    type: Number,
+    required: false,
+  },
+  gender: {
+    type: String,
+    required: false,
+    enum: ["Мужской", "Женский", null],
+  },
+  expulsionInfo: {
+    type: String,
+  },
+  orphanStatus: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "OrphanStatus",
+  },
+  disabilityStatus: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "DisabilityStatus",
+  },
+  ovzStatus: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "OVZStatus",
+  },
+  riskGroupSOP: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "RiskGroupSOP",
+  },
+  svoStatus: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "SVOStatus",
+  },
+  socialScholarship: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "SocialScholarship",
+  },
 });
 
-StudentSchema.index({ lastName: 1 });
-StudentSchema.index({ phone: 1 });
-StudentSchema.index({ departmentId: 1 });
-StudentSchema.index({ admissionYear: 1 });
-
 export default mongoose.models.Student ||
-  mongoose.model("Student", StudentSchema);
+  mongoose.model("Student", studentSchema);

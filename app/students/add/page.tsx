@@ -29,6 +29,8 @@ export default function AddStudent() {
     departmentId: undefined,
     admissionYear: undefined,
     expulsionInfo: "",
+    graduationYear: undefined,
+    gender: undefined,
   });
   const [formData2, setFormData2] = useState({ subGroup: "1" });
   const [errors, setErrors] = useState<Partial<Record<keyof Student, string>>>(
@@ -96,6 +98,21 @@ export default function AddStudent() {
     generateGroup,
   ]);
 
+  const formatPhoneNumber = (input: string): string => {
+    const digits = input.replace(/\D/g, "");
+    if (digits.length === 0) return "";
+    const countryCode = digits.startsWith("7") ? "+7" : "+7";
+    let formatted = countryCode;
+    const rest = digits.startsWith("7") ? digits.slice(1) : digits;
+
+    if (rest.length > 0) formatted += ` (${rest.slice(0, 3)}`;
+    if (rest.length > 3) formatted += `)-${rest.slice(3, 6)}`;
+    if (rest.length > 6) formatted += `-${rest.slice(6, 8)}`;
+    if (rest.length > 8) formatted += `-${rest.slice(8, 10)}`;
+
+    return formatted;
+  };
+
   const validateForm = () => {
     const newErrors: Partial<Record<keyof Student, string>> = {};
     if (!formData.lastName) newErrors.lastName = "Фамилия обязательна";
@@ -110,10 +127,9 @@ export default function AddStudent() {
     if (!formData.funding) newErrors.funding = "Финансирование обязательно";
     if (!formData.departmentId)
       newErrors.departmentId = "Отделение обязательно";
-    if (
-      formData.admissionYear &&
-      !/^\d{4}$/.test(formData.admissionYear.toString())
-    )
+    if (!formData.admissionYear)
+      newErrors.admissionYear = "Год поступления обязателен";
+    else if (!/^\d{4}$/.test(formData.admissionYear.toString()))
       newErrors.admissionYear = "Год поступления: 4 цифры";
     if (!formData.education) newErrors.education = "Образование обязательно";
 
@@ -143,6 +159,10 @@ export default function AddStudent() {
           admissionYear: formData.admissionYear
             ? Number(formData.admissionYear)
             : undefined,
+          graduationYear: formData.graduationYear
+            ? Number(formData.graduationYear)
+            : undefined,
+          gender: formData.gender || undefined,
         }),
       });
       const result = await res.json();
@@ -160,6 +180,8 @@ export default function AddStudent() {
           departmentId: undefined,
           admissionYear: undefined,
           expulsionInfo: "",
+          graduationYear: undefined,
+          gender: undefined,
         });
         setFormData2({ subGroup: "1" });
       } else {
@@ -173,7 +195,12 @@ export default function AddStudent() {
   };
 
   const handleInputChange = (key: keyof Student, value: string | number) => {
-    setFormData((prev) => ({ ...prev, [key]: value }));
+    if (key === "phone") {
+      const formattedPhone = formatPhoneNumber(value as string);
+      setFormData((prev) => ({ ...prev, [key]: formattedPhone }));
+    } else {
+      setFormData((prev) => ({ ...prev, [key]: value }));
+    }
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
@@ -474,6 +501,38 @@ export default function AddStudent() {
                   {errors.education}
                 </p>
               )}
+            </div>
+            <div>
+              <Label htmlFor="gender" className="text-[#0060AC]">
+                Пол
+              </Label>
+              <Select
+                value={formData.gender}
+                onValueChange={(value) => handleInputChange("gender", value)}
+              >
+                <SelectTrigger id="gender" className="border-[#0060AC]">
+                  <SelectValue placeholder="Выберите пол" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Мужской">Мужской</SelectItem>
+                  <SelectItem value="Женский">Женский</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="graduationYear" className="text-[#0060AC]">
+                Год выпуска
+              </Label>
+              <Input
+                id="graduationYear"
+                type="number"
+                placeholder="Введите год выпуска"
+                value={formData.graduationYear || ""}
+                onChange={(e) =>
+                  handleInputChange("graduationYear", Number(e.target.value))
+                }
+                className="border-[#0060AC] focus:ring-[#0060AC]"
+              />
             </div>
             <div>
               <Label htmlFor="expulsionInfo" className="text-[#0060AC]">
