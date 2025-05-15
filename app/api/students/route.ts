@@ -10,17 +10,34 @@ export async function GET(request: Request) {
 
   try {
     await initMongoose();
-    const students = await Student.find()
+    const { searchParams } = new URL(request.url);
+    const filters: any = {};
+    if (searchParams.get("lastName"))
+      filters.lastName = new RegExp(searchParams.get("lastName"), "i");
+    if (searchParams.get("firstName"))
+      filters.firstName = new RegExp(searchParams.get("firstName"), "i");
+    if (searchParams.get("group"))
+      filters.group = new RegExp(searchParams.get("group"), "i");
+    if (searchParams.get("departmentId"))
+      filters.departmentId = searchParams.get("departmentId");
+    if (searchParams.get("admissionYear"))
+      filters.admissionYear = Number(searchParams.get("admissionYear"));
+
+    console.log("Fetching students with filters:", filters);
+    const students = await Student.find(filters)
       .populate({
         path: "departmentId",
         model: "Department",
+        select: "_id name code",
       })
       .lean();
-    await mongoose.disconnect();
     return NextResponse.json(students);
   } catch (error) {
-    await mongoose.disconnect();
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Error in GET /api/students:", error);
+    return NextResponse.json(
+      { error: error.message || "Не удалось загрузить студентов" },
+      { status: 500 }
+    );
   }
 }
 
@@ -88,17 +105,20 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log("Creating student:", data);
     const student = await Student.create({
       ...data,
       departmentId: data.departmentId._id,
       graduationYear: data.graduationYear || undefined,
       gender: data.gender || undefined,
     });
-    await mongoose.disconnect();
     return NextResponse.json(student, { status: 201 });
   } catch (error) {
-    await mongoose.disconnect();
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error("Error in POST /api/students:", error);
+    return NextResponse.json(
+      { error: error.message || "Ошибка при создании студента" },
+      { status: 400 }
+    );
   }
 }
 
@@ -108,7 +128,15 @@ export async function DELETE(request: Request) {
 
   try {
     await initMongoose();
-    const { id } = await request.json();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: "Неверный ID студента" },
+        { status: 400 }
+      );
+    }
+    console.log("Deleting student with ID:", id);
     const hasLinks = await Promise.any([
       mongoose.model("OrphanStatus").exists({ studentId: id }),
       mongoose.model("DisabilityStatus").exists({ studentId: id }),
@@ -129,10 +157,12 @@ export async function DELETE(request: Request) {
     if (!student) {
       return NextResponse.json({ error: "Студент не найден" }, { status: 404 });
     }
-    await mongoose.disconnect();
     return NextResponse.json({ message: "Студент удалён" });
   } catch (error) {
-    await mongoose.disconnect();
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error("Error in DELETE /api/students:", error);
+    return NextResponse.json(
+      { error: error.message || "Ошибка при удалении студента" },
+      { status: 400 }
+    );
   }
 }

@@ -1,51 +1,35 @@
 import mongoose from "mongoose";
-import clientPromise from "@/lib/mongodb";
-import Student from "@/models/Student";
-import Department from "@/models/Department";
-import OrphanStatus from "@/models/OrphanStatus";
-import DisabilityStatus from "@/models/DisabilityStatus";
-import OVZStatus from "@/models/OVZStatus";
-import Dormitory from "@/models/Dormitory";
-import RiskGroupSOP from "@/models/RiskGroupSOP";
-import SPPP from "@/models/SPPP";
-import SVOStatus from "@/models/SVOStatus";
-import SocialScholarship from "@/models/SocialScholarship";
-import Room from "@/models/Room";
-import File from "@/models/File";
-import User from "@/models/User";
-import ErrorLog from "@/models/ErrorLog";
 
-const models = [
-  Student,
-  Department,
-  OrphanStatus,
-  DisabilityStatus,
-  OVZStatus,
-  Dormitory,
-  RiskGroupSOP,
-  SPPP,
-  SVOStatus,
-  SocialScholarship,
-  Room,
-  File,
-  User,
-  ErrorLog,
-];
+const MONGODB_URI =
+  process.env.MONGODB_URI || "mongodb://localhost:27017/praktika05";
 
-async function initMongoose() {
+export default async function initMongoose() {
+  const readyState = mongoose.connection.readyState;
+  console.log("MongoDB readyState:", readyState); // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+
+  if (readyState === 1) {
+    console.log("MongoDB already connected");
+    return;
+  }
+
+  if (readyState === 2) {
+    console.log("MongoDB is connecting, waiting...");
+    await new Promise((resolve) =>
+      mongoose.connection.once("connected", resolve)
+    );
+    console.log("MongoDB connected");
+    return;
+  }
+
+  console.log("Connecting to MongoDB:", MONGODB_URI);
   try {
-    await clientPromise;
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGODB_URI!, {
-        bufferCommands: false,
-      });
-      console.log("Mongoose connected");
-    }
-    return mongoose.connection;
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
+    });
+    console.log("Mongoose connected");
   } catch (error) {
     console.error("Mongoose connection error:", error);
-    throw error;
+    throw new Error("Failed to connect to MongoDB");
   }
 }
-
-export default initMongoose;

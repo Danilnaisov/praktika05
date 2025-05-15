@@ -6,17 +6,26 @@ import { requireAuth } from "@/lib/auth";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAuth();
   if (auth instanceof Response) return auth;
 
+  const { id } = await context.params;
+
   try {
     await initMongoose();
-    const student = await Student.findById(params.id)
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: "Неверный ID студента" },
+        { status: 400 }
+      );
+    }
+    const student = await Student.findById(id)
       .populate({
         path: "departmentId",
         model: "Department",
+        select: "_id name code",
       })
       .lean();
     if (!student) {
@@ -26,19 +35,30 @@ export async function GET(
     return NextResponse.json(student);
   } catch (error) {
     await mongoose.disconnect();
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Ошибка сервера" },
+      { status: 500 }
+    );
   }
 }
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAuth();
   if (auth instanceof Response) return auth;
 
+  const { id } = await context.params;
+
   try {
     await initMongoose();
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: "Неверный ID студента" },
+        { status: 400 }
+      );
+    }
     const data = await request.json();
 
     if (
@@ -49,7 +69,8 @@ export async function PUT(
       !data.phone ||
       !data.funding ||
       !data.departmentId?._id ||
-      !data.education
+      !data.education ||
+      !data.admissionYear
     ) {
       return NextResponse.json(
         { error: "Все обязательные поля должны быть заполнены" },
@@ -68,7 +89,7 @@ export async function PUT(
         { status: 400 }
       );
     }
-    if (data.admissionYear && !/^\d{4}$/.test(data.admissionYear.toString())) {
+    if (!/^\d{4}$/.test(data.admissionYear.toString())) {
       return NextResponse.json(
         { error: "Год поступления должен быть 4-значным числом" },
         { status: 400 }
@@ -97,13 +118,15 @@ export async function PUT(
     }
 
     const student = await Student.findByIdAndUpdate(
-      params.id,
-      { ...data, departmentId: data.departmentId._id },
+      id,
+      {
+        ...data,
+        departmentId: data.departmentId._id,
+        graduationYear: data.graduationYear || undefined,
+        gender: data.gender || undefined,
+      },
       { new: true }
-    ).populate({
-      path: "departmentId",
-      model: "Department",
-    });
+    );
     if (!student) {
       return NextResponse.json({ error: "Студент не найден" }, { status: 404 });
     }
@@ -111,28 +134,39 @@ export async function PUT(
     return NextResponse.json(student);
   } catch (error) {
     await mongoose.disconnect();
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json(
+      { error: error.message || "Ошибка сервера" },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAuth(["Admin"]);
   if (auth instanceof Response) return auth;
 
+  const { id } = await context.params;
+
   try {
     await initMongoose();
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: "Неверный ID студента" },
+        { status: 400 }
+      );
+    }
     const hasLinks = await Promise.any([
-      mongoose.model("OrphanStatus").exists({ studentId: params.id }),
-      mongoose.model("DisabilityStatus").exists({ studentId: params.id }),
-      mongoose.model("OVZStatus").exists({ studentId: params.id }),
-      mongoose.model("Dormitory").exists({ studentId: params.id }),
-      mongoose.model("RiskGroupSOP").exists({ studentId: params.id }),
-      mongoose.model("SPPP").exists({ studentId: params.id }),
-      mongoose.model("SVOStatus").exists({ studentId: params.id }),
-      mongoose.model("SocialScholarship").exists({ studentId: params.id }),
+      mongoose.model("OrphanStatus").exists({ studentId: id }),
+      mongoose.model("DisabilityStatus").exists({ studentId: id }),
+      mongoose.model("OVZStatus").exists({ studentId: id }),
+      mongoose.model("Dormitory").exists({ studentId: id }),
+      mongoose.model("RiskGroupSOP").exists({ studentId: id }),
+      mongoose.model("SPPP").exists({ studentId: id }),
+      mongoose.model("SVOStatus").exists({ studentId: id }),
+      mongoose.model("SocialScholarship").exists({ studentId: id }),
     ]);
     if (hasLinks) {
       return NextResponse.json(
@@ -140,7 +174,7 @@ export async function DELETE(
         { status: 400 }
       );
     }
-    const student = await Student.findByIdAndDelete(params.id);
+    const student = await Student.findByIdAndDelete(id);
     if (!student) {
       return NextResponse.json({ error: "Студент не найден" }, { status: 404 });
     }
@@ -148,6 +182,9 @@ export async function DELETE(
     return NextResponse.json({ message: "Студент удалён" });
   } catch (error) {
     await mongoose.disconnect();
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json(
+      { error: error.message || "Ошибка сервера" },
+      { status: 500 }
+    );
   }
 }

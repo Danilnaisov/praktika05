@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import initMongoose from "@/lib/mongodb";
 import Department from "@/models/Department";
-import mongoose from "mongoose";
 import { requireAuth } from "@/lib/auth";
 
 export async function GET() {
@@ -10,12 +9,18 @@ export async function GET() {
 
   try {
     await initMongoose();
+    console.log("Fetching departments...");
     const departments = await Department.find().lean();
-    await mongoose.disconnect();
+    if (!departments.length) {
+      console.log("No departments found");
+    }
     return NextResponse.json(departments);
   } catch (error) {
-    await mongoose.disconnect();
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Error in GET /api/departments:", error);
+    return NextResponse.json(
+      { error: error.message || "Не удалось загрузить отделения" },
+      { status: 500 }
+    );
   }
 }
 
@@ -26,20 +31,23 @@ export async function POST(request: Request) {
   try {
     await initMongoose();
     const { name, code } = await request.json();
-    if (!name || !code) {
+    if (!name) {
       return NextResponse.json(
-        { error: "Название и код обязательны" },
+        { error: "Название обязательно" },
         { status: 400 }
       );
     }
+    console.log("Creating department:", { name, code });
     const department = await Department.create({
       name,
-      code: code.toUpperCase(),
+      code: code ? code.toUpperCase() : undefined,
     });
-    await mongoose.disconnect();
     return NextResponse.json(department, { status: 201 });
   } catch (error) {
-    await mongoose.disconnect();
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error("Error in POST /api/departments:", error);
+    return NextResponse.json(
+      { error: error.message || "Ошибка при создании отделения" },
+      { status: 400 }
+    );
   }
 }
