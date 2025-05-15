@@ -10,6 +10,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const lastName = searchParams.get("lastName");
     const group = searchParams.get("group");
+    const departmentId = searchParams.get("departmentId");
+    const admissionYear = searchParams.get("admissionYear");
     const asOfDate = searchParams.get("asOfDate");
     const hasOrphanStatus = searchParams.get("hasOrphanStatus");
     const hasDisabilityStatus = searchParams.get("hasDisabilityStatus");
@@ -17,10 +19,16 @@ export async function GET(request: Request) {
     const hasRiskGroupSOP = searchParams.get("hasRiskGroupSOP");
     const hasSVOStatus = searchParams.get("hasSVOStatus");
     const hasSocialScholarship = searchParams.get("hasSocialScholarship");
+    const hasPenalties = searchParams.get("hasPenalties");
+    const hasSPPP = searchParams.get("hasSPPP");
+    const roomId = searchParams.get("roomId");
 
     const query: any = {};
     if (lastName) query.lastName = { $regex: lastName, $options: "i" };
     if (group) query.group = group;
+    if (departmentId) query.departmentId = departmentId;
+    if (admissionYear) query.admissionYear = Number(admissionYear);
+    if (hasPenalties === "true") query.penalties = { $ne: "" };
 
     const statusFilter: any = asOfDate
       ? {
@@ -94,7 +102,25 @@ export async function GET(request: Request) {
         ? { $in: studentIds.filter((id) => query._id.$in.includes(id)) }
         : { $in: studentIds };
     }
+    if (hasSPPP === "true") {
+      const sppps = await mongoose.model("SPPP").find().select("studentId");
+      studentIds = sppps.map((s) => s.studentId);
+      query._id = query._id
+        ? { $in: studentIds.filter((id) => query._id.$in.includes(id)) }
+        : { $in: studentIds };
+    }
+    if (roomId) {
+      const dormitories = await mongoose
+        .model("Dormitory")
+        .find({ roomId })
+        .select("studentId");
+      studentIds = dormitories.map((d) => d.studentId);
+      query._id = query._id
+        ? { $in: studentIds.filter((id) => query._id.$in.includes(id)) }
+        : { $in: studentIds };
+    }
 
+    console.log("Query:", JSON.stringify(query));
 
     const students = await Student.find(query)
       .populate({
@@ -103,7 +129,6 @@ export async function GET(request: Request) {
       })
       .lean();
 
-    // Дополняем студентов данными о статусах
     const studentIdsSet = new Set(students.map((s) => s._id.toString()));
     const statuses = await Promise.all([
       mongoose
@@ -181,9 +206,12 @@ export async function GET(request: Request) {
       ),
     }));
 
+    console.log("Found students:", studentsWithStatuses.length);
+
     await mongoose.disconnect();
     return NextResponse.json(studentsWithStatuses || []);
   } catch (error) {
+    console.error("Error in /api/students/filter:", error);
     await mongoose.disconnect();
     return NextResponse.json(
       { error: error.message, students: [] },

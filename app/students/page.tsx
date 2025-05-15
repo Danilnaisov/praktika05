@@ -20,29 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-interface Student {
-  _id: string;
-  lastName: string;
-  firstName: string;
-  middleName: string;
-  birthDate: string;
-  group: string;
-  phone: string;
-  funding: string;
-  education: string;
-  expulsionInfo: string;
-  orphanStatus?: { order: string; startDate: string; endDate?: string };
-  disabilityStatus?: { order: string; startDate: string; endDate?: string };
-  ovzStatus?: { order: string; startDate: string; endDate?: string };
-  riskGroupSOP?: {
-    type: string;
-    registrationDate: string;
-    deregistrationDate?: string;
-  };
-  svoStatus?: { document: string; startDate: string; endDate?: string };
-  socialScholarship?: { document: string; startDate: string; endDate?: string };
-}
+import { Student } from "@/types/student";
 
 export default function StudentsList() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -51,6 +29,8 @@ export default function StudentsList() {
   const [filters, setFilters] = useState({
     lastName: "",
     group: "",
+    departmentId: "",
+    admissionYear: "",
     asOfDate: "2025-02-08",
     hasOrphanStatus: "false",
     hasDisabilityStatus: "false",
@@ -58,6 +38,9 @@ export default function StudentsList() {
     hasRiskGroupSOP: "false",
     hasSVOStatus: "false",
     hasSocialScholarship: "false",
+    hasPenalties: "false",
+    hasSPPP: "false",
+    roomId: "",
   });
 
   const fetchStudents = async () => {
@@ -72,6 +55,8 @@ export default function StudentsList() {
         hasRiskGroupSOP: filters.hasRiskGroupSOP,
         hasSVOStatus: filters.hasSVOStatus,
         hasSocialScholarship: filters.hasSocialScholarship,
+        hasPenalties: filters.hasPenalties,
+        hasSPPP: filters.hasSPPP,
       }).toString();
       const res = await fetch(`/api/students/filter?${query}`);
       const data = await res.json();
@@ -136,6 +121,34 @@ export default function StudentsList() {
                 placeholder="Введите группу"
                 value={filters.group}
                 onChange={(e) => handleFilterChange("group", e.target.value)}
+                className="border-[#0060AC] focus:ring-[#0060AC]"
+              />
+            </div>
+            <div>
+              <Label htmlFor="departmentId" className="text-[#0060AC]">
+                Отделение
+              </Label>
+              <Input
+                id="departmentId"
+                placeholder="ID отделения"
+                value={filters.departmentId}
+                onChange={(e) =>
+                  handleFilterChange("departmentId", e.target.value)
+                }
+                className="border-[#0060AC] focus:ring-[#0060AC]"
+              />
+            </div>
+            <div>
+              <Label htmlFor="admissionYear" className="text-[#0060AC]">
+                Год поступления
+              </Label>
+              <Input
+                id="admissionYear"
+                placeholder="Год поступления"
+                value={filters.admissionYear}
+                onChange={(e) =>
+                  handleFilterChange("admissionYear", e.target.value)
+                }
                 className="border-[#0060AC] focus:ring-[#0060AC]"
               />
             </div>
@@ -257,7 +270,7 @@ export default function StudentsList() {
             </div>
             <div>
               <Label htmlFor="hasSocialScholarship" className="text-[#0060AC]">
-                Социальная стипендия
+                Соц. стипендия
               </Label>
               <Select
                 value={filters.hasSocialScholarship}
@@ -276,6 +289,54 @@ export default function StudentsList() {
                   <SelectItem value="true">Действующие</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label htmlFor="hasPenalties" className="text-[#0060AC]">
+                Взыскания
+              </Label>
+              <Select
+                value={filters.hasPenalties}
+                onValueChange={(value) =>
+                  handleFilterChange("hasPenalties", value)
+                }
+              >
+                <SelectTrigger id="hasPenalties" className="border-[#0060AC]">
+                  <SelectValue placeholder="Взыскания" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="false">Все</SelectItem>
+                  <SelectItem value="true">С взысканиями</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="hasSPPP" className="text-[#0060AC]">
+                СППП
+              </Label>
+              <Select
+                value={filters.hasSPPP}
+                onValueChange={(value) => handleFilterChange("hasSPPP", value)}
+              >
+                <SelectTrigger id="hasSPPP" className="border-[#0060AC]">
+                  <SelectValue placeholder="СППП" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="false">Все</SelectItem>
+                  <SelectItem value="true">С СППП</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="roomId" className="text-[#0060AC]">
+                Комната
+              </Label>
+              <Input
+                id="roomId"
+                placeholder="ID комнаты"
+                value={filters.roomId}
+                onChange={(e) => handleFilterChange("roomId", e.target.value)}
+                className="border-[#0060AC] focus:ring-[#0060AC]"
+              />
             </div>
           </div>
           <Button
@@ -300,51 +361,78 @@ export default function StudentsList() {
             <Table className="bg-white/80 border-[#0060AC]/30 rounded-lg">
               <TableHeader>
                 <TableRow className="hover:bg-[#9EA1A2]/20">
-                  <TableHead className="text-[#0060AC]">ФИО</TableHead>
-                  <TableHead className="text-[#0060AC]">
+                  <TableHead className="text-[#0060AC] h-16">ФИО</TableHead>
+                  <TableHead className="text-[#0060AC] h-16">
                     Дата рождения
                   </TableHead>
-                  <TableHead className="text-[#0060AC]">Группа</TableHead>
-                  <TableHead className="text-[#0060AC]">
+                  <TableHead className="text-[#0060AC] h-16">Группа</TableHead>
+                  <TableHead className="text-[#0060AC] h-16">
                     Контактный номер
                   </TableHead>
-                  <TableHead className="text-[#0060AC]">
+                  <TableHead className="text-[#0060AC] h-16">
                     Финансирование
                   </TableHead>
-                  <TableHead className="text-[#0060AC]">Образование</TableHead>
-                  <TableHead className="text-[#0060AC]">Сирота</TableHead>
-                  <TableHead className="text-[#0060AC]">Инвалид</TableHead>
-                  <TableHead className="text-[#0060AC]">ОВЗ</TableHead>
-                  <TableHead className="text-[#0060AC]">Группа риска</TableHead>
-                  <TableHead className="text-[#0060AC]">СВО</TableHead>
-                  <TableHead className="text-[#0060AC]">
+                  <TableHead className="text-[#0060AC] h-16">
+                    Образование
+                  </TableHead>
+                  <TableHead className="text-[#0060AC] h-16">Сирота</TableHead>
+                  <TableHead className="text-[#0060AC] h-16">Инвалид</TableHead>
+                  <TableHead className="text-[#0060AC] h-16">ОВЗ</TableHead>
+                  <TableHead className="text-[#0060AC] h-16">
+                    Группа риска
+                  </TableHead>
+                  <TableHead className="text-[#0060AC] h-16">СВО</TableHead>
+                  <TableHead className="text-[#0060AC] h-16">
                     Соц. стипендия
                   </TableHead>
-                  <TableHead className="text-[#0060AC]">Отчисление</TableHead>
+                  <TableHead className="text-[#0060AC] h-16">
+                    Отчисление
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {students.map((student) => (
-                  <TableRow key={student._id} className="hover:bg-[#9EA1A2]/10">
-                    <TableCell>{`${student.lastName} ${student.firstName} ${student.middleName}`}</TableCell>
-                    <TableCell>
+                  <TableRow
+                    key={student._id}
+                    className="hover:bg-[#9EA1A2]/10 h-20"
+                  >
+                    <TableCell className="whitespace-normal">{`${student.lastName} ${student.firstName} ${student.middleName}`}</TableCell>
+                    <TableCell className="whitespace-normal">
                       {new Date(student.birthDate).toLocaleDateString("ru-RU")}
                     </TableCell>
-                    <TableCell>{student.group}</TableCell>
-                    <TableCell>{student.phone}</TableCell>
-                    <TableCell>{student.funding}</TableCell>
-                    <TableCell>{student.education || "-"}</TableCell>
-                    <TableCell>{student.orphanStatus?.order || "-"}</TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-normal">
+                      {student.group}
+                    </TableCell>
+                    <TableCell className="whitespace-normal">
+                      {student.phone}
+                    </TableCell>
+                    <TableCell className="whitespace-normal">
+                      {student.funding}
+                    </TableCell>
+                    <TableCell className="whitespace-normal">
+                      {student.education || "-"}
+                    </TableCell>
+                    <TableCell className="whitespace-normal">
+                      {student.orphanStatus?.order || "-"}
+                    </TableCell>
+                    <TableCell className="whitespace-normal">
                       {student.disabilityStatus?.order || "-"}
                     </TableCell>
-                    <TableCell>{student.ovzStatus?.order || "-"}</TableCell>
-                    <TableCell>{student.riskGroupSOP?.type || "-"}</TableCell>
-                    <TableCell>{student.svoStatus?.document || "-"}</TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-normal">
+                      {student.ovzStatus?.order || "-"}
+                    </TableCell>
+                    <TableCell className="whitespace-normal">
+                      {student.riskGroupSOP?.type || "-"}
+                    </TableCell>
+                    <TableCell className="whitespace-normal">
+                      {student.svoStatus?.document || "-"}
+                    </TableCell>
+                    <TableCell className="whitespace-normal">
                       {student.socialScholarship?.document || "-"}
                     </TableCell>
-                    <TableCell>{student.expulsionInfo || "-"}</TableCell>
+                    <TableCell className="whitespace-normal">
+                      {student.expulsionInfo || "-"}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
