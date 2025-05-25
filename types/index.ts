@@ -19,7 +19,7 @@ export interface IStudent {
   note?: string;
   parentInfo?: string;
   penalties?: string;
-  files?: Types.ObjectId[];
+  files?: IFile[];
   orphanStatus?: IOrphanStatus;
   disabilityStatus?: IDisabilityStatus;
   ovzStatus?: IOvzStatus;
@@ -37,7 +37,7 @@ export interface IOrphanStatus {
   startDate: Date;
   endDate?: Date;
   note?: string;
-  files?: Types.ObjectId[];
+  files?: IFile[];
 }
 
 export interface IDisabilityStatus {
@@ -48,7 +48,7 @@ export interface IDisabilityStatus {
   endDate?: Date;
   note?: string;
   disabilityType: string;
-  files?: Types.ObjectId[];
+  files?: IFile[];
 }
 
 export interface IOvzStatus {
@@ -58,7 +58,7 @@ export interface IOvzStatus {
   startDate: Date;
   endDate?: Date;
   note?: string;
-  files?: Types.ObjectId[];
+  files?: IFile[];
 }
 
 export interface IDormitory {
@@ -68,7 +68,7 @@ export interface IDormitory {
   startDate: Date;
   endDate?: Date;
   note?: string;
-  files?: Types.ObjectId[];
+  files?: IFile[];
 }
 
 export interface IRiskGroupSop {
@@ -106,7 +106,7 @@ export interface ISvoStatus {
   startDate: Date;
   endDate?: Date;
   note?: string;
-  files?: Types.ObjectId[];
+  files?: IFile[];
 }
 
 export interface ISocialScholarship {
@@ -115,7 +115,7 @@ export interface ISocialScholarship {
   startDate: Date;
   endDate?: Date;
   note?: string;
-  files?: Types.ObjectId[];
+  files?: IFile[];
 }
 
 export interface IDepartment {

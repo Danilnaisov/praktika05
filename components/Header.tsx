@@ -10,9 +10,14 @@ export default function Header() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const userData = localStorage.getItem("user");
-      setUser(userData ? userData : "Гость");
+      if (!userData) {
+        // Если пользователь не авторизован, перенаправляем на страницу входа
+        router.push("/login");
+      } else {
+        setUser(userData);
+      }
     }
-  }, []);
+  }, [router]); // Добавляем router в зависимости useEffect
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -20,6 +25,11 @@ export default function Header() {
       router.push("/login");
     }
   };
+
+  // Если пользователь не авторизован, не рендерим шапку
+  if (!user) {
+    return null;
+  }
 
   return (
     <header className="bg-white border-b border-[#B0CDE4] py-3 px-6 flex items-center justify-between">

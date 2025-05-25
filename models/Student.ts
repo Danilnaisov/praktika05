@@ -97,6 +97,7 @@ const studentSchema = new Schema<IStudent>({
     {
       type: Schema.Types.ObjectId,
       ref: "File",
+      populate: true,
     },
   ],
 });

@@ -6,16 +6,17 @@ import { hashPassword } from "../utils/auth";
 import Student from "../models/Student";
 import OrphanStatus from "../models/OrphanStatus";
 import DisabilityStatus from "../models/DisabilityStatus";
-import OVZStatus from "../models/OvzStatus";
+import OvzStatus from "../models/OvzStatus";
 import Dormitory from "../models/Dormitory";
-import RiskGroupSOP from "../models/RiskGroupSop";
-import SPPP from "../models/Sppp";
-import SVOStatus from "../models/SvoStatus";
+import RiskGroupSop from "../models/RiskGroupSop";
+import Sppp from "../models/Sppp";
+import SvoStatus from "../models/SvoStatus";
 import SocialScholarship from "../models/SocialScholarship";
 import Department from "../models/Department";
 import Room from "../models/Room";
 import File from "../models/File";
 import User from "../models/User";
+import ErrorLog from "../models/ErrorLog";
 
 async function initDB() {
   await connectToDatabase();
@@ -25,16 +26,17 @@ async function initDB() {
     Student.deleteMany({}),
     OrphanStatus.deleteMany({}),
     DisabilityStatus.deleteMany({}),
-    OVZStatus.deleteMany({}),
+    OvzStatus.deleteMany({}),
     Dormitory.deleteMany({}),
-    RiskGroupSOP.deleteMany({}),
-    SPPP.deleteMany({}),
-    SVOStatus.deleteMany({}),
+    RiskGroupSop.deleteMany({}),
+    Sppp.deleteMany({}),
+    SvoStatus.deleteMany({}),
     SocialScholarship.deleteMany({}),
     Department.deleteMany({}),
     Room.deleteMany({}),
     File.deleteMany({}),
     User.deleteMany({}),
+    ErrorLog.deleteMany({}),
   ]);
 
   // Создание отделов

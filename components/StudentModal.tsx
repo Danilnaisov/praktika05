@@ -22,7 +22,7 @@ import {
   StepperTrigger,
 } from "@/components/ui/stepper";
 import { ArrowLeft, ArrowRight, Plus, X } from "lucide-react";
-import { IStudent } from "@/types";
+import { IStudent, IFile } from "@/types";
 
 interface FileData {
   url: string;
@@ -227,9 +227,9 @@ export default function StudentModal({
           : "",
         orphanNote: student.orphanStatus?.note || "",
         orphanFiles:
-          student.orphanStatus?.files?.map((file) => ({
+          student.orphanStatus?.files?.map((file: IFile) => ({
             url: file.path,
-            fileId: file._id.toString(),
+            fileId: file._id?.toString() || "",
           })) || [],
         disabledOrder: student.disabilityStatus?.order || "",
         disabledStart: student.disabilityStatus?.startDate
@@ -245,9 +245,9 @@ export default function StudentModal({
         disabledNote: student.disabilityStatus?.note || "",
         disabledType: student.disabilityStatus?.disabilityType || "",
         disabledFiles:
-          student.disabilityStatus?.files?.map((file) => ({
+          student.disabilityStatus?.files?.map((file: IFile) => ({
             url: file.path,
-            fileId: file._id.toString(),
+            fileId: file._id?.toString() || "",
           })) || [],
         ovzOrder: student.ovzStatus?.order || "",
         ovzStart: student.ovzStatus?.startDate
@@ -258,9 +258,9 @@ export default function StudentModal({
           : "",
         ovzNote: student.ovzStatus?.note || "",
         ovzFiles:
-          student.ovzStatus?.files?.map((file) => ({
+          student.ovzStatus?.files?.map((file: IFile) => ({
             url: file.path,
-            fileId: file._id.toString(),
+            fileId: file._id?.toString() || "",
           })) || [],
         dormitoryRoom: student?.dormitory?.roomId?._id?.toString() || "",
         dormitoryStart: student?.dormitory?.startDate
@@ -271,9 +271,9 @@ export default function StudentModal({
           : "",
         dormitoryNote: student?.dormitory?.note || "",
         dormitoryFiles:
-          student?.dormitory?.files?.map((file) => ({
+          student?.dormitory?.files?.map((file: IFile) => ({
             url: file.path,
-            fileId: file._id.toString(),
+            fileId: file._id?.toString() || "",
           })) || [],
         riskSopType:
           student.riskGroupSop?.type === "sop"
@@ -312,9 +312,9 @@ export default function StudentModal({
           },
         ],
         svoDoc:
-          student.svoStatus?.files?.map((file) => ({
+          student.svoStatus?.files?.map((file: IFile) => ({
             url: file.path,
-            fileId: file._id.toString(),
+            fileId: file._id?.toString() || "",
           })) || [],
         svoStart: student.svoStatus?.startDate
           ? new Date(student.svoStatus.startDate).toISOString().split("T")[0]
@@ -324,9 +324,9 @@ export default function StudentModal({
           : "",
         svoDocument: student.svoStatus?.note || "",
         scholarshipDoc:
-          student.socialScholarship?.files?.map((file) => ({
+          student.socialScholarship?.files?.map((file: IFile) => ({
             url: file.path,
-            fileId: file._id.toString(),
+            fileId: file._id?.toString() || "",
           })) || [],
         scholarshipStart: student.socialScholarship?.startDate
           ? new Date(student.socialScholarship.startDate)
