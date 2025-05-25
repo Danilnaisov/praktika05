@@ -11,8 +11,8 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "commonjs", // Изменили на commonjs для ts-node
-    "moduleResolution": "node", // Изменили на node для совместимости
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -36,11 +36,5 @@
   ],
   "exclude": [
     "node_modules"
-  ],
-  "ts-node": {
-    "transpileOnly": true,
-    "compilerOptions": {
-      "module": "commonjs"
-    }
-  }
+  ]
 }

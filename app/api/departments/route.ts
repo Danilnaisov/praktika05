@@ -1,53 +1,56 @@
-import { NextResponse } from "next/server";
-import initMongoose from "@/lib/mongodb";
-import Department from "@/models/Department";
-import { requireAuth } from "@/lib/auth";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { NextRequest, NextResponse } from "next/server";
+import connectToDatabase from "../../../lib/mongodb";
+import Department from "../../../models/Department";
+import ErrorLog from "../../../models/ErrorLog";
+import { IDepartment } from "../../../types";
+import { verifyToken } from "../../../utils/auth";
 
-export async function GET() {
-  const auth = await requireAuth();
-  if (auth instanceof Response) return auth;
-
+export async function GET(req: NextRequest) {
   try {
-    await initMongoose();
-    console.log("Fetching departments...");
-    const departments = await Department.find().lean();
-    if (!departments.length) {
-      console.log("No departments found");
-    }
+    await connectToDatabase();
+    const token = req.headers.get("authorization")?.split(" ")[1];
+    if (!token)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const departments = await Department.find();
     return NextResponse.json(departments);
-  } catch (error) {
-    console.error("Error in GET /api/departments:", error);
-    return NextResponse.json(
-      { error: error.message || "Не удалось загрузить отделения" },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    await ErrorLog.create({
+      errorCode: "GET_DEPARTMENTS_ERROR",
+      message: error.message,
+      timestamp: new Date(),
+    });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export async function POST(request: Request) {
-  const auth = await requireAuth(["Admin"]);
-  if (auth instanceof Response) return auth;
-
+export async function POST(req: NextRequest) {
   try {
-    await initMongoose();
-    const { name, code } = await request.json();
-    if (!name) {
+    await connectToDatabase();
+    const token = req.headers.get("authorization")?.split(" ")[1];
+    if (!token)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const user = await verifyToken(token);
+    if (user.role !== "Admin")
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const data: IDepartment = await req.json();
+    if (!data.name)
       return NextResponse.json(
-        { error: "Название обязательно" },
+        { error: "Поле name обязательно" },
         { status: 400 }
       );
-    }
-    console.log("Creating department:", { name, code });
-    const department = await Department.create({
-      name,
-      code: code ? code.toUpperCase() : undefined,
-    });
+
+    const department = await Department.create(data);
     return NextResponse.json(department, { status: 201 });
-  } catch (error) {
-    console.error("Error in POST /api/departments:", error);
-    return NextResponse.json(
-      { error: error.message || "Ошибка при создании отделения" },
-      { status: 400 }
-    );
+  } catch (error: any) {
+    await ErrorLog.create({
+      errorCode: "POST_DEPARTMENT_ERROR",
+      message: error.message,
+      timestamp: new Date(),
+    });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

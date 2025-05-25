@@ -1,12 +1,20 @@
-import mongoose, { Schema } from "mongoose";
+import { Schema, model, models } from "mongoose";
+import { IErrorLog } from "../types";
 
-const ErrorLogSchema = new Schema({
-  errorCode: { type: String, required: true },
-  message: { type: String, required: true },
-  timestamp: { type: Date, required: true, default: Date.now },
+const errorLogSchema = new Schema<IErrorLog>({
+  errorCode: {
+    type: String,
+    required: true,
+  },
+  message: {
+    type: String,
+    required: true,
+  },
+  timestamp: {
+    type: Date,
+    required: true,
+    default: Date.now,
+  },
 });
 
-ErrorLogSchema.index({ timestamp: 1 });
-
-export default mongoose.models.ErrorLog ||
-  mongoose.model("ErrorLog", ErrorLogSchema);
+export default models.ErrorLog || model<IErrorLog>("ErrorLog", errorLogSchema);

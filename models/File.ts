@@ -1,26 +1,34 @@
-import mongoose, { Schema } from "mongoose";
+import { Schema, model, models } from "mongoose";
+import { IFile } from "../types";
 
-const FileSchema = new Schema({
-  entityId: { type: Schema.Types.ObjectId, required: true },
+const fileSchema = new Schema<IFile>({
+  entityId: {
+    type: Schema.Types.ObjectId,
+    required: true,
+  },
   entityType: {
     type: String,
-    required: true,
     enum: [
       "Student",
       "OrphanStatus",
       "DisabilityStatus",
-      "OVZStatus",
+      "OvzStatus",
       "Dormitory",
-      "RiskGroupSOP",
-      "SPPP",
-      "SVOStatus",
+      "RiskGroupSop",
+      "Sppp",
+      "SvoStatus",
       "SocialScholarship",
     ],
+    required: true,
   },
-  filePath: { type: String, required: true },
-  uploadedAt: { type: Date, required: true, default: Date.now },
+  path: {
+    type: String,
+    required: true,
+  },
+  uploadedAt: {
+    type: Date,
+    required: true,
+  },
 });
 
-FileSchema.index({ entityId: 1, entityType: 1 });
-
-export default mongoose.models.File || mongoose.model("File", FileSchema);
+export default models.File || model<IFile>("File", fileSchema);

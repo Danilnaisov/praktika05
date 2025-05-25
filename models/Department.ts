@@ -1,20 +1,14 @@
-import mongoose from "mongoose";
+import { Schema, model, models } from "mongoose";
+import { IDepartment } from "../types";
 
-const departmentSchema = new mongoose.Schema({
+const departmentSchema = new Schema<IDepartment>({
   name: {
     type: String,
-    required: [true, "Название отделения обязательно"],
-    unique: true,
-  },
-  code: {
-    type: String,
-    required: [true, "Код отделения обязателен"],
-    unique: true,
-    uppercase: true,
-    minlength: [2, "Код должен быть не менее 2 символов"],
-    maxlength: [5, "Код должен быть не более 5 символов"],
+    required: true,
   },
 });
 
-export default mongoose.models.Department ||
-  mongoose.model("Department", departmentSchema);
+export default models.Department ||
+  model<IDepartment>("Department", departmentSchema);
+
+  

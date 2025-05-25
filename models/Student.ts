@@ -1,87 +1,104 @@
-import mongoose from "mongoose";
+import { Schema, model, models } from "mongoose";
+import { IStudent } from "../types";
 
-const studentSchema = new mongoose.Schema({
+const studentSchema = new Schema<IStudent>({
   lastName: {
     type: String,
-    required: [true, "Фамилия обязательна"],
+    required: true,
+    validate: {
+      validator: (v: string) => /^[А-Яа-яA-Za-z]+$/.test(v),
+      message: "Фамилия должна содержать только буквы",
+    },
   },
   firstName: {
     type: String,
-    required: [true, "Имя обязательно"],
+    required: true,
+    validate: {
+      validator: (v: string) => /^[А-Яа-яA-Za-z]+$/.test(v),
+      message: "Имя должно содержать только буквы",
+    },
   },
   middleName: {
     type: String,
+    required: true,
+    validate: {
+      validator: (v: string) => /^[А-Яа-яA-Za-z]+$/.test(v),
+      message: "Отчество должно содержать только буквы",
+    },
   },
   birthDate: {
     type: Date,
-    required: [true, "Дата рождения обязательна"],
-  },
-  group: {
-    type: String,
-    required: [true, "Группа обязательна"],
-  },
-  phone: {
-    type: String,
-    required: [true, "Телефон обязателен"],
-    match: [/^\+7 \(\d{3}\)-\d{3}-\d{2}-\d{2}$/, "Неверный формат телефона"],
-  },
-  funding: {
-    type: String,
-    required: [true, "Финансирование обязательно"],
-    enum: ["Бюджет", "Контракт", "Платное"],
-  },
-  education: {
-    type: String,
-    required: [true, "Образование обязательно"],
-    enum: ["9 кл.", "11 кл.", "СПО", "ВО"],
-  },
-  departmentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Department",
-    required: [true, "Отделение обязательно"],
-  },
-  admissionYear: {
-    type: Number,
-    required: [true, "Год поступления обязателен"],
-    match: [/^\d{4}$/, "Год поступления должен быть 4-значным числом"],
-  },
-  graduationYear: {
-    type: Number,
-    required: false,
+    required: true,
   },
   gender: {
     type: String,
-    required: false,
-    enum: ["Мужской", "Женский", null],
+    enum: ["М", "Ж"],
+    required: true,
+  },
+  phone: {
+    type: String,
+    required: true,
+    validate: {
+      validator: (v: string) => /^\+7 \(\d{3}\)-\d{3}-\d{2}-\d{2}$/.test(v),
+      message: "Номер телефона должен быть в формате +7 (XXX)-XXX-XX-XX",
+    },
+  },
+  education: {
+    type: String,
+    enum: ["9 кл.", "11 кл."],
+    required: true,
+  },
+  departmentId: {
+    type: Schema.Types.ObjectId,
+    ref: "Department",
+    required: true,
+  },
+  group: {
+    type: String,
+    required: true,
+  },
+  funding: {
+    type: String,
+    enum: ["Бюджет", "Внебюджет"],
+    required: true,
+  },
+  admissionYear: {
+    type: Number,
+    required: true,
+    validate: {
+      validator: (v: number) => /^\d{4}$/.test(v.toString()),
+      message: "Год поступления должен быть числом",
+    },
+  },
+  graduationYear: {
+    type: Number,
+    required: true,
+    validate: {
+      validator: (v: number) => /^\d{4}$/.test(v.toString()),
+      message: "Год окончания должен быть числом",
+    },
   },
   expulsionInfo: {
     type: String,
   },
-  orphanStatus: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "OrphanStatus",
+  expulsionDate: {
+    type: Date,
   },
-  disabilityStatus: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "DisabilityStatus",
+  note: {
+    type: String,
   },
-  ovzStatus: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "OVZStatus",
+  parentInfo: {
+    type: String,
   },
-  riskGroupSOP: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "RiskGroupSOP",
+  penalties: {
+    type: String,
   },
-  svoStatus: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "SVOStatus",
-  },
-  socialScholarship: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "SocialScholarship",
-  },
+  files: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "File",
+    },
+  ],
 });
 
-export default mongoose.models.Student ||
-  mongoose.model("Student", studentSchema);
+export default models.Student || model<IStudent>("Student", studentSchema);
